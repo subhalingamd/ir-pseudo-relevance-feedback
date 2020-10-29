@@ -10,7 +10,7 @@ if __name__ == '__main__':
 	parser.add_argument('collection_file', metavar='collection-file',
                     help='file containing the full document collection (in the same format as msmarco-docs file given)')
 	parser.add_argument('expansion_limit', metavar='expansion-limit', type=int, choices=range(1,15+1),
-                    help='is a number ranging from 1—15 that specifies the limit on the number of additional terms in the expanded query')
+                    help='is a number ranging from 1-15 that specifies the limit on the number of additional terms in the expanded query')
 	args = parser.parse_args()
 
 	query_file = args.query_file
