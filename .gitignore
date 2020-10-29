@@ -1,0 +1,16 @@
+# for mac
+**/.DS_Store
+
+# ignore data/results
+data**/*
+inp/*
+out/*
+
+# FOR PYTHON
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
