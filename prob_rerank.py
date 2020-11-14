@@ -119,7 +119,7 @@ def prob_rerank_method(collection_file,top_100_file,expansion_limit,query_file,o
 				line100_comp = line100.rstrip('\n').split()
 
 				if not line100 or line100_comp[0] != qline_comp[0]:
-					assert query_count == 100
+					#assert query_count == 100
 					qtext = qline_comp[1]
 
 					# process
