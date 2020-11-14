@@ -43,10 +43,14 @@ def output_work(qid,reranked_docs,filepath):
 		print("\n",file=f)
 
 def do_task(docid_file_offset,qtext,result_docs,collection_file,expansion_limit,vocab_words_df,avg_doc_len_coll):
+	percent_rel = 0.35
+	rel_docs_ct = int(percent_rel * len(result_docs))
 	qtext = preprocess(qtext)
 	qtext_set = set(qtext)
-	df_rel_doc_set = {}
+	df_rel_doc_set, df_all_doc_set = {},{}
 	doc_body_all = []
+	i = 0
+	tot_doc_len = 0
 	with open(collection_file,'r',encoding="utf-8") as f:
 		for docid in result_docs:
 			docid_seek = docid_file_offset[docid]
@@ -54,30 +58,35 @@ def do_task(docid_file_offset,qtext,result_docs,collection_file,expansion_limit,
 			doc_data = f.readline()
 			doc_body = doc_data.rstrip('\n').split('\t')[-1]
 			doc_body = preprocess(doc_body)
+			tot_doc_len += len(doc_body)
 			doc_body_all.append(doc_body)
 			doc_body_set = set(doc_body)
 			for word in doc_body_set:
 				if word in qtext_set:
 					continue
-				df_rel_doc_set[word] = df_rel_doc_set.get(word,0) + 1
+				df_all_doc_set[word] = df_all_doc_set.get(word,0) + 1
+				if i < rel_docs_ct:
+					df_rel_doc_set[word] = df_rel_doc_set.get(word,0) + 1
+				i += 1
 
+	vocab_words_df = df_all_doc_set
 	# Define variables as in paper
-	N = len(docid_file_offset) 	# the number of documents in the collection
-	R = len(result_docs) 		# the number of known relevant document for a request = 100
+	N = len(result_docs) 	# the number of documents in the collection
+	R = rel_docs_ct 		# the number of known relevant document for a request = 100
 	# r = the number of known relevant documents term t(i) occurs in
 	# n = the number of documents term t(i) occurs in = df(i)
 
-	for word,r in df_rel_doc_set.values():
-		n = vocab_words_df[word]
+	for word,n in vocab_words_df.values():
+		r = df_rel_doc_set[word]
 		score = r * log ( ( (r+0.5)*(N-n-R+r+0.5) ) / ( (n-r+0.5)*(R-r+0.5) ) )
 		# just update the values
-		df_rel_doc_set[word] = score
+		vocab_words_df[word] = score
 
 	# add query terms
-	new_queries = sorted(df_rel_doc_set.items(),key=lambda x:x[1], reverse = True)[:expansion_limit]
+	new_queries = sorted(vocab_words_df.items(),key=lambda x:x[1], reverse = True)[:expansion_limit]
 	qtext.extend([qw_[0] for qw_ in new_queries])
 
-	return bm25(qtext=qtext,docs_id=result_docs,docs_body=doc_body_all,vocab_words_df=vocab_words_df,num_docs_collection=N,avg_docs_len=avg_doc_len_coll)
+	return bm25(qtext=qtext,docs_id=result_docs,docs_body=doc_body_all,vocab_words_df=vocab_words_df,num_docs_collection=N,avg_docs_len=tot_doc_len/N)
 
 
 def prob_rerank_method(collection_file,top_100_file,expansion_limit,query_file,output_file):
@@ -87,9 +96,9 @@ def prob_rerank_method(collection_file,top_100_file,expansion_limit,query_file,o
 		pass
 
 	docid_file_offset = {}
-	vocab_words_df = {}
+	#vocab_words_df = {}
 	offset = 0
-	tot_doc_len = 0
+	#tot_doc_len = 0
 	with open(collection_file,'r',encoding="utf-8") as f:
 		#for line in f:
 		while 1:
@@ -97,15 +106,15 @@ def prob_rerank_method(collection_file,top_100_file,expansion_limit,query_file,o
 			if not line:
 				break
 			line_comp = line.rstrip('\n').split('\t')
-			doc_body_processed = preprocess(line_comp[-1])
-			tot_doc_len += len(doc_body_processed)
-			doc_body_processed = set(doc_body_processed)
-			for word in doc_body_processed:
-				vocab_words_df[word] = vocab_words_df.get(word,0) + 1
+			#doc_body_processed = preprocess(line_comp[-1])
+			#tot_doc_len += len(doc_body_processed)
+			#doc_body_processed = set(doc_body_processed)
+			#for word in doc_body_processed:
+			#	vocab_words_df[word] = vocab_words_df.get(word,0) + 1
 			docid_file_offset.update({line_comp[0]:offset})
 			offset = f.tell()
 
-	avg_doc_len_coll = tot_doc_len/len(docid_file_offset) if len(docid_file_offset)>0 else 0 # avoid divide by zero
+	#avg_doc_len_coll = tot_doc_len/len(docid_file_offset) if len(docid_file_offset)>0 else 0 # avoid divide by zero
 
 	with open(query_file,'r',encoding="utf-8") as f:
 		qline = f.readline()
@@ -119,11 +128,11 @@ def prob_rerank_method(collection_file,top_100_file,expansion_limit,query_file,o
 				line100_comp = line100.rstrip('\n').split()
 
 				if not line100 or line100_comp[0] != qline_comp[0]:
-					assert query_count == 100
+					#assert query_count == 100
 					qtext = qline_comp[1]
 
 					# process
-					reranked_docs = do_task(docid_file_offset=docid_file_offset,qtext=qtext,result_docs=result_docs,collection_file=collection_file,expansion_limit=expansion_limit,vocab_words_df=vocab_words_df,avg_doc_len_coll=avg_doc_len_coll)
+					reranked_docs = do_task(docid_file_offset=docid_file_offset,qtext=qtext,result_docs=result_docs,collection_file=collection_file,expansion_limit=expansion_limit,vocab_words_df=None,avg_doc_len_coll=1)
 					output_work(qid=qline_comp[0],reranked_docs=reranked_docs,filepath=output_file)
 
 					query_count = 0
