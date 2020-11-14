@@ -54,11 +54,13 @@ def do_task(docid_file_offset,qtext,result_docs,collection_file,expansion_limit,
 	tot_doc_len = 0
 	with open(collection_file,'r',encoding="utf-8") as f:
 		for docid in result_docs:
+			"""
 			#test
 			if docid not in docid_file_offset:
 				doc_body_all.append([])
 				continue
 			#end test
+			"""
 			docid_seek = docid_file_offset[docid]
 			f.seek(docid_seek)
 			doc_data = f.readline()
@@ -92,7 +94,7 @@ def do_task(docid_file_offset,qtext,result_docs,collection_file,expansion_limit,
 	new_queries = sorted(vocab_words_df.items(),key=lambda x:x[1], reverse = True)[:expansion_limit]
 	qtext.extend([qw_[0] for qw_ in new_queries])
 
-	return bm25(qtext=qtext,docs_id=result_docs,docs_body=doc_body_all,vocab_words_df=vocab_words_df,num_docs_collection=N,avg_docs_len=tot_doc_len/N+0.1)
+	return bm25(qtext=qtext,docs_id=result_docs,docs_body=doc_body_all,vocab_words_df=vocab_words_df,num_docs_collection=N,avg_docs_len=tot_doc_len/N+1e-4)
 
 
 def prob_rerank_method(collection_file,top_100_file,expansion_limit,query_file,output_file):
