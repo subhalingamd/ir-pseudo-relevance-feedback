@@ -16,7 +16,7 @@ def preprocess(text):
 	return processed
 
 def bm25(qtext,docs_id,docs_body,vocab_words_df,num_docs_collection,avg_docs_len):
-	rel_scores = [0 for i in range(docs_id)]
+	rel_scores = [0 for i in range(len(docs_id))]
 	N = num_docs_collection
 	k1 = 1.4
 	b = 0.75
