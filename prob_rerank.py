@@ -74,7 +74,7 @@ def do_task(docid_file_offset,qtext,result_docs,collection_file,expansion_limit)
 				df_all_doc_set[word] = df_all_doc_set.get(word,0) + 1
 				if i < rel_docs_ct:
 					df_rel_doc_set[word] = df_rel_doc_set.get(word,0) + 1
-				i += 1
+			i += 1
 
 	vocab_words_df = df_all_doc_set
 	# Define variables as in paper
