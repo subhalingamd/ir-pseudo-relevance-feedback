@@ -67,7 +67,7 @@ def do_task(docid_file_offset,qtext,result_docs,collection_file,expansion_limit,
 	# r = the number of known relevant documents term t(i) occurs in
 	# n = the number of documents term t(i) occurs in = df(i)
 
-	for word,r in df_rel_doc_set.values():
+	for word,r in df_rel_doc_set.items():
 		n = vocab_words_df[word]
 		score = r * log ( ( (r+0.5)*(N-n-R+r+0.5) ) / ( (n-r+0.5)*(R-r+0.5) ) )
 		# just update the values
