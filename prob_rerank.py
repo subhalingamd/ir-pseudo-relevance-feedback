@@ -23,7 +23,6 @@ def bm25(qtext,docs_id,docs_body,vocab_words_df,num_docs_collection,avg_docs_len
 	for q in qtext:
 		n_q = vocab_words_df.get(q,0)
 		idf_q = log(( (N-n_q+0.5)/(n_q+0.5) + 1))
-		idf_q = idf_q if idf_q > 0 else 1
 		for i in range(len(docs_id)):
 			# docid = docs_id[i]
 			docbody = docs_body[i]
@@ -43,7 +42,7 @@ def output_work(qid,reranked_docs,filepath):
 			curr_rank += 1
 		print("\n",file=f)
 
-def do_task(docid_file_offset,qtext,result_docs,collection_file,expansion_limit,vocab_words_df,avg_doc_len_coll):
+def do_task(docid_file_offset,qtext,result_docs,collection_file,expansion_limit):
 	percent_rel = 0.35
 	rel_docs_ct = int(percent_rel * len(result_docs))
 	qtext = preprocess(qtext)
@@ -140,7 +139,7 @@ def prob_rerank_method(collection_file,top_100_file,expansion_limit,query_file,o
 					qtext = qline_comp[1]
 
 					# process
-					reranked_docs = do_task(docid_file_offset=docid_file_offset,qtext=qtext,result_docs=result_docs,collection_file=collection_file,expansion_limit=expansion_limit,vocab_words_df=None,avg_doc_len_coll=1)
+					reranked_docs = do_task(docid_file_offset=docid_file_offset,qtext=qtext,result_docs=result_docs,collection_file=collection_file,expansion_limit=expansion_limit)
 					output_work(qid=qline_comp[0],reranked_docs=reranked_docs,filepath=output_file)
 
 					query_count = 0
