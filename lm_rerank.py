@@ -73,6 +73,7 @@ def do_uni_task(docid_file_offset,qtext,result_docs,collection_file,vocab_words_
 	# rel_scores = [0 for i in range(len(result_docs))]
 	rel_scores = []
 	df_rel_doc_set = {}
+	docs_id = result_docs
 
 	qtext = preprocess(qtext)
 	doc_body_all = []
@@ -96,7 +97,7 @@ def do_uni_task(docid_file_offset,qtext,result_docs,collection_file,vocab_words_
 		#for w,p_w_R in dict_p_w_R.items():
 		for w in df_rel_doc_set:
 			p_w_R = dict_p_w_R[w]
-			curr_score += (p_w_R * log(uni_dirch_smooth(w,docbody,vocab_words_df,len_c)))
+			curr_score += (p_w_R * log(uni_dirch_smooth(w,docbody,vocab_words_df,len_c=tot_doc_len)))
 		rel_scores.append(curr_score)
 
 	reranked_docs = [(doc,_) for _, doc in sorted(zip(rel_scores,docs_id), key=lambda x: x[0], reverse=True)]
