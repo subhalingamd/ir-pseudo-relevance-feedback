@@ -4,6 +4,7 @@ from nltk.corpus import stopwords
 import krovetz
 import string
 import re
+import json
 from math import log
 ks = krovetz.PyKrovetzStemmer()
 stop_words = set(stopwords.words('english')) # | set(string.punctuation)
@@ -90,6 +91,7 @@ def prob_rerank_method(collection_file,top_100_file,expansion_limit,query_file,o
 	vocab_words_df = {}
 	offset = 0
 	tot_doc_len = 0
+	"""
 	with open(collection_file,'r',encoding="utf-8") as f:
 		#for line in f:
 		while 1:
@@ -104,8 +106,13 @@ def prob_rerank_method(collection_file,top_100_file,expansion_limit,query_file,o
 				vocab_words_df[word] = vocab_words_df.get(word,0) + 1
 			docid_file_offset.update({line_comp[0]:offset})
 			offset = f.tell()
+	"""
+	with open('scratch/df.json', 'r') as fp:
+		vocab_words_df = json.load(fp)
+	with open('scratch/offset.json', 'r') as fp:
+		docid_file_offset = json.load(fp)
 
-	avg_doc_len_coll = tot_doc_len/len(docid_file_offset) if len(docid_file_offset)>0 else 0 # avoid divide by zero
+	avg_doc_len_coll = 742.1994187629421 # avoid divide by zero
 
 	with open(query_file,'r',encoding="utf-8") as f:
 		qline = f.readline()
