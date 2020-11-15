@@ -130,6 +130,15 @@ def uni_lm_rerank_method(collection_file,top_100_file,query_file,output_file):
 
 	#[mod] next line is not req!!!
 	# avg_doc_len_coll = tot_doc_len/len(docid_file_offset) if len(docid_file_offset)>0 else 0 # avoid divide by zero
+	
+	"""
+	import json
+	with open("scratch/smooth-df.json", 'r') as fp:
+		vocab_words_df = json.load(fp)
+	with open("scratch/smooth-offset.json", 'r') as fp:
+		docid_file_offset = json.load(fp)
+	tot_doc_len = 2385306469
+	"""
 
 	with open(query_file,'r',encoding="utf-8") as f:
 		qline = f.readline()
