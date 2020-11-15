@@ -39,6 +39,32 @@ def uni_dirch_smooth(t,docbody,vocab_words_df,len_c):
 	p_final = (f_td + mu*p_c)/(len_d + mu)
 	return p_final
 
+def bi_dirch_smooth(t0,t1,docbody,docbody_pairs,vocab_words_df,vocab_words_df_pairs,len_c):
+	# P(t|D) = (f{t,d} + \mu*P_c(t))/(|D| + \mu)
+	# P_c(t) = f{t,C}/|C|
+	mu1 = 1
+	mu2 = 2
+	mu3 = 2
+
+	len_d = len(docbody) + 1e-4 #avoid divide by zero if not found??
+
+	lambda1 = mu1/(len_d+mu1)
+	lambda2 = mu2/(len_d+mu2)
+	lambda3 = mu3/(len_d+mu3)
+
+	pair = t0+" "+t1
+
+	f_t0_t1_d = docbody_pairs.count(pair)
+	f_t0_d = docbody.count(t0) + 1e-4 #avoid divide by zero if not found??
+	f_t1_d = docbody.count(t1)
+
+	f_t0_t1_c = vocab_words_df_pairs.get(pair,0)
+	f_t0_c = vocab_words_df.get(t0,0) + 1e-4 #avoid divide by zero if not found??
+	f_t1_c = vocab_words_df.get(t1,0)
+
+	p_final = (1-lambda1)*( ((1-lambda2)*f_t0_t1_d/f_t0_d) + (lambda2*f_t1_d/len_d)  ) + (lambda1)*(  (1-lambda3)*(f_t0_t1_c/f_t0_c) + (lambda3*f_t1_c/len_c)  )
+	return p_final
+
 
 def uni_lavrenko_croft(docs_body,vocab_words_df,len_c,q_text,df_rel_doc_set):
 	# P(w|R) constant for given word irrespective of doc
@@ -65,6 +91,36 @@ def uni_lavrenko_croft(docs_body,vocab_words_df,len_c,q_text,df_rel_doc_set):
 	
 	return dict_p_w_R
 
+
+def bi_lavrenko_croft(docs_body,docs_body_pair,vocab_words_df,vocab_words_df_pair,len_c,q_text,df_rel_doc_set_pair):
+	# P(w|R) constant for given word irrespective of doc
+	# docs_body like [["A1","A2"],["B1"]]
+	# qtext like ["word1","word2","word3"]
+
+	dict_p_w_R = {}
+
+	for wp in df_rel_doc_set_pair:
+		p_wQ = 0
+		
+		w0 = wp.split()[0]
+		w1 = wp.split()[1]
+
+		for docbody,docbody_pair in zip(docs_body,docs_body_pair):
+			p_m = 1 # Assume uniform distribution
+
+			p_w_M = bi_dirch_smooth(w0,w1,docbody,docbody_pair,vocab_words_df,vocab_words_df_pair,len_c)
+
+			prod_p_q_M = uni_dirch_smooth(q_text[0],docbody,vocab_words_df,len_c)
+			for i in range(1,len(q_text)):
+				qu0 = q_text[i-1]
+				qu1 = q_text[i]
+				prod_p_q_M *= bi_dirch_smooth(qu0,qu1,docbody,docbody_pair,vocab_words_df,vocab_words_df_pair,len_c)
+
+			p_wQ += (p_m * p_w_M * prod_p_q_M)
+
+		dict_p_w_R.update({wp:p_wQ})
+	
+	return dict_p_w_R
 
 def do_uni_task(docid_file_offset,qtext,result_docs,collection_file,vocab_words_df,tot_doc_len):
 	# rank using KL divergence score
@@ -104,7 +160,54 @@ def do_uni_task(docid_file_offset,qtext,result_docs,collection_file,vocab_words_
 	return reranked_docs
 
 def do_bi_task(docid_file_offset,qtext,result_docs,collection_file,vocab_words_df,vocab_words_df_pairs,tot_doc_len):
-	return None
+	rel_scores = []
+	df_rel_doc_set_pairs = {}
+	docs_id = result_docs
+
+	qtext = preprocess_with_stop(qtext)
+	doc_body_all,doc_body_all_pairs = [],[]
+
+	with open(collection_file,'r',encoding="utf-8") as f:
+		for docid in result_docs:
+			"""
+			#test1#
+			if docid not in docid_file_offset:
+				doc_body_all.append([])
+				doc_body_all_pairs.append([])
+				continue
+			#test1#
+			"""
+			docid_seek = docid_file_offset[docid]
+			f.seek(docid_seek)
+			doc_data = f.readline()
+			doc_body = doc_data.rstrip('\n').split('\t')[-1]
+			doc_body = preprocess_with_stop(doc_body)
+			doc_body_all.append(doc_body)
+			for_docbody_pair = []
+			for i in range(1,len(doc_body)):
+				for_docbody_pair.append(doc_body[i-1]+" "+doc_body[i])
+			doc_body_all_pairs.append(for_docbody_pair)
+
+			doc_body_set = set(for_docbody_pair)
+			for word in doc_body_set:
+				df_rel_doc_set_pairs[word] = df_rel_doc_set_pairs.get(word,0) + 1
+
+	dict_p_w_R = bi_lavrenko_croft(docs_body=doc_body_all,docs_body_pair=doc_body_all_pairs,vocab_words_df=vocab_words_df,vocab_words_df_pair=vocab_words_df_pairs,len_c=tot_doc_len,q_text=qtext,df_rel_doc_set_pair=df_rel_doc_set_pairs)
+	
+	# use KL diveregnce
+	for docbody,docbody_pair in zip(doc_body_all,doc_body_all_pairs):
+		curr_score = 0
+		#for w,p_w_R in dict_p_w_R.items():
+		for w in df_rel_doc_set_pairs:
+			wo0 = w.split()[0]
+			wo1 = w.split()[1]
+			p_w_R = dict_p_w_R[w]
+			curr_score += (p_w_R * log(bi_dirch_smooth(wo0,wo1,docbody,docbody_pair,vocab_words_df,vocab_words_df_pairs,len_c=tot_doc_len)))
+		rel_scores.append(curr_score)
+
+
+	reranked_docs = [(doc,_) for _, doc in sorted(zip(rel_scores,docs_id), key=lambda x: x[0], reverse=True)]
+	return reranked_docs
 
 
 #### [mod]
@@ -197,7 +300,7 @@ def bi_lm_rerank_method(collection_file,top_100_file,query_file,output_file):
 			if not line:
 				break
 			line_comp = line.rstrip('\n').split('\t')
-			doc_body_processed = preprocess(line_comp[-1])
+			doc_body_processed = preprocess_with_stop(line_comp[-1])
 			tot_doc_len += len(doc_body_processed)
 			#[mod] doc_body_processed = set(doc_body_processed)
 			if len(doc_body_processed) > 0:
