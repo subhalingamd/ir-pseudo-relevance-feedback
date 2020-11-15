@@ -40,13 +40,13 @@ def uni_dirch_smooth(t,docbody,vocab_words_df,len_c):
 	return p_final
 
 
-def uni_lavrenko_croft(docs_body,vocab_words_df,len_c,q_text):
+def uni_lavrenko_croft(docs_body,vocab_words_df,len_c,q_text,df_rel_doc_set):
 	# P(w|R) constant for given word irrespective of doc
 	# docs_body like [["A1","A2"],["B1"]]
 	# qtext like ["word1","word2","word3"]
 
 	dict_p_w_R = {}
-	for w in vocab_words_df:  # find P(w|R) for given word w in vocabulary
+	for w in df_rel_doc_set:  # find P(w|R) for given word w in vocabulary
 		p_wQ = 0
 
 		for docbody in docs_body:
@@ -72,6 +72,7 @@ def do_uni_task(docid_file_offset,qtext,result_docs,collection_file,vocab_words_
 	#this will be added using append
 	# rel_scores = [0 for i in range(len(result_docs))]
 	rel_scores = []
+	df_rel_doc_set = {}
 
 	qtext = preprocess(qtext)
 	doc_body_all = []
@@ -83,13 +84,18 @@ def do_uni_task(docid_file_offset,qtext,result_docs,collection_file,vocab_words_
 			doc_body = doc_data.rstrip('\n').split('\t')[-1]
 			doc_body = preprocess(doc_body)
 			doc_body_all.append(doc_body)
+			doc_body_set = set(doc_body)
+			for word in doc_body_set:
+				df_rel_doc_set[word] = df_rel_doc_set.get(word,0) + 1
 
-	dict_p_w_R = uni_lavrenko_croft(docs_body=doc_body_all,vocab_words_df=vocab_words_df,len_c=tot_doc_len,q_text=qtext)
+	dict_p_w_R = uni_lavrenko_croft(docs_body=doc_body_all,vocab_words_df=vocab_words_df,len_c=tot_doc_len,q_text=qtext,df_rel_doc_set=df_rel_doc_set)
 	
 	# use KL diveregnce
 	for docbody in doc_body_all:
 		curr_score = 0
-		for w,p_w_R in dict_p_w_R.items():
+		#for w,p_w_R in dict_p_w_R.items():
+		for w in df_rel_doc_set:
+			p_w_R = dict_p_w_R[w]
 			curr_score += (p_w_R * log(uni_dirch_smooth(w,docbody,vocab_words_df,len_c)))
 		rel_scores.append(curr_score)
 
