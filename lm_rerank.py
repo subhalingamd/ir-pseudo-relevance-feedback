@@ -49,7 +49,7 @@ def uni_lavrenko_croft(docs_body,vocab_words_df,len_c,q_text):
 	for w in vocab_words_df:  # find P(w|R) for given word w in vocabulary
 		p_wQ = 0
 
-		for docbody in docs_body
+		for docbody in docs_body:
 			p_m = 1 # Assume uniform distribution
 			
 			p_w_M = uni_dirch_smooth(w,docbody,vocab_words_df,len_c)
