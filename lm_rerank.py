@@ -27,6 +27,8 @@ def output_work(qid,reranked_docs,filepath):
 		print("\n",file=f)
 
 def uni_dirch_smooth(t,docbody,vocab_words_df,len_c):
+	# P(t|D) = (f{t,d} + \mu*P_c(t))/(|D| + \mu)
+	# P_c(t) = f{t,C}/|C|
 	mu = 2
 	f_td = docbody.count(t)
 	len_d = len(docbody)
@@ -38,18 +40,75 @@ def uni_dirch_smooth(t,docbody,vocab_words_df,len_c):
 	return p_final
 
 
-def uni_lavrenko_croft():
-	return None
+def uni_lavrenko_croft(docs_body,vocab_words_df,len_c,q_text):
+	# P(w|R) constant for given word irrespective of doc
+	# docs_body like [["A1","A2"],["B1"]]
+	# qtext like ["word1","word2","word3"]
+
+	dict_p_w_R = {}
+	for w in vocab_words_df:  # find P(w|R) for given word w in vocabulary
+		p_wQ = 0
+
+		for docbody in docs_body
+			p_m = 1 # Assume uniform distribution
+			
+			p_w_M = uni_dirch_smooth(w,docbody,vocab_words_df,len_c)
+			prod_p_q_M = 1
+			for q in q_text:
+				prod_p_q_M *= uni_dirch_smooth(q,docbody,vocab_words_df,len_c)
+
+			#p_wQ_M = p_w_M * prod_p_q_M
+
+			p_wQ += (p_m * p_w_M * prod_p_q_M)
+
+		dict_p_w_R.update(w:p_wQ)
+	
+	return dict_p_w_R
 
 
 
+
+
+
+	df_rel_doc_set, df_all_doc_set = {},{}
+	
+	i = 0
+	tot_doc_len = 0
+	
 
 
 
 
 
 def do_uni_task(docid_file_offset,qtext,result_docs,collection_file,vocab_words_df,tot_doc_len):
-	return None
+	# rank using KL divergence score
+	
+	#this will be added using append
+	# rel_scores = [0 for i in range(len(result_docs))]
+	rel_scores = []
+
+	qtext = preprocess(qtext)
+	doc_body_all = []
+	with open(collection_file,'r',encoding="utf-8") as f:
+		for docid in result_docs:
+			docid_seek = docid_file_offset[docid]
+			f.seek(docid_seek)
+			doc_data = f.readline()
+			doc_body = doc_data.rstrip('\n').split('\t')[-1]
+			doc_body = preprocess(doc_body)
+			doc_body_all.append(doc_body)
+
+	dict_p_w_R = uni_lavrenko_croft(docs_body=doc_body_all,vocab_words_df=vocab_words_df,len_c=tot_doc_len,q_text=qtext)
+	
+	# use KL diveregnce
+	for docbody in doc_body_all:
+		curr_score = 0
+		for w,p_w_R in dict_p_w_R.items():
+			curr_score += (p_w_R * log(uni_dirch_smooth(w,docbody,vocab_words_df,len_c)))
+		rel_scores.append(curr_score)
+
+	reranked_docs = [(doc,_) for _, doc in sorted(zip(rel_scores,docs_id), key=lambda x: x[0], reverse=True)]
+	return reranked_docs
 
 def do_bi_task(docid_file_offset,qtext,result_docs,collection_file,vocab_words_df,vocab_words_df_pairs,tot_doc_len):
 	return None
