@@ -61,23 +61,9 @@ def uni_lavrenko_croft(docs_body,vocab_words_df,len_c,q_text):
 
 			p_wQ += (p_m * p_w_M * prod_p_q_M)
 
-		dict_p_w_R.update(w:p_wQ)
+		dict_p_w_R.update({w:p_wQ})
 	
 	return dict_p_w_R
-
-
-
-
-
-
-	df_rel_doc_set, df_all_doc_set = {},{}
-	
-	i = 0
-	tot_doc_len = 0
-	
-
-
-
 
 
 def do_uni_task(docid_file_offset,qtext,result_docs,collection_file,vocab_words_df,tot_doc_len):
