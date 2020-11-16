@@ -40,7 +40,6 @@ def output_work(qid,reranked_docs,filepath):
 		for item in reranked_docs:
 			print(qid,'Q0',item[0],curr_rank,item[1],'runid1',file=f)
 			curr_rank += 1
-		print("\n",file=f)
 
 def do_task(docid_file_offset,qtext,result_docs,collection_file,expansion_limit):
 	percent_rel = 0.35

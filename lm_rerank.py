@@ -24,7 +24,6 @@ def output_work(qid,reranked_docs,filepath):
 		for item in reranked_docs:
 			print(qid,'Q0',item[0],curr_rank,item[1],'runid1',file=f)
 			curr_rank += 1
-		print("\n",file=f)
 
 def uni_dirch_smooth(t,docbody,vocab_words_df,len_c):
 	# P(t|D) = (f{t,d} + \mu*P_c(t))/(|D| + \mu)
