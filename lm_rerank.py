@@ -72,22 +72,17 @@ def uni_lavrenko_croft(docs_body,vocab_words_df,len_c,q_text,df_rel_doc_set):
 	# qtext like ["word1","word2","word3"]
 
 	dict_p_w_R = {}
-	for w in df_rel_doc_set:  # find P(w|R) for given word w in vocabulary
-		p_wQ = 0
 
-		for docbody in docs_body:
-			p_m = 1 # Assume uniform distribution
-			
+	for docbody in docs_body:
+		p_m = 1 # Assume uniform distribution
+		prod_p_q_M = 1
+		for q in q_text:
+			prod_p_q_M *= uni_dirch_smooth(q,docbody,vocab_words_df,len_c)
+
+		for w in df_rel_doc_set: # find P(w|R) for given word w in vocabulary				
 			p_w_M = uni_dirch_smooth(w,docbody,vocab_words_df,len_c)
-			prod_p_q_M = 1
-			for q in q_text:
-				prod_p_q_M *= uni_dirch_smooth(q,docbody,vocab_words_df,len_c)
-
-			#p_wQ_M = p_w_M * prod_p_q_M
-
-			p_wQ += (p_m * p_w_M * prod_p_q_M)
-
-		dict_p_w_R.update({w:p_wQ})
+			p_wQ = p_m * p_w_M * prod_p_q_M
+			dict_p_w_R[w] = dict_p_w_R.get(w,0) + p_wQ
 	
 	return dict_p_w_R
 
@@ -99,26 +94,24 @@ def bi_lavrenko_croft(docs_body,docs_body_pair,vocab_words_df,vocab_words_df_pai
 
 	dict_p_w_R = {}
 
-	for wp in df_rel_doc_set_pair:
-		p_wQ = 0
-		
-		w0 = wp.split()[0]
-		w1 = wp.split()[1]
+	for docbody,docbody_pair in zip(docs_body,docs_body_pair):
+		p_m = 1 # Assume uniform distribution
 
-		for docbody,docbody_pair in zip(docs_body,docs_body_pair):
-			p_m = 1 # Assume uniform distribution
+		prod_p_q_M = uni_dirch_smooth(q_text[0],docbody,vocab_words_df,len_c)
+		for i in range(1,len(q_text)):
+			qu0 = q_text[i-1]
+			qu1 = q_text[i]
+			prod_p_q_M *= bi_dirch_smooth(qu0,qu1,docbody,docbody_pair,vocab_words_df,vocab_words_df_pair,len_c)
+
+		for wp in df_rel_doc_set_pair:			
+			w0 = wp.split()[0]
+			w1 = wp.split()[1]
 
 			p_w_M = bi_dirch_smooth(w0,w1,docbody,docbody_pair,vocab_words_df,vocab_words_df_pair,len_c)
 
-			prod_p_q_M = uni_dirch_smooth(q_text[0],docbody,vocab_words_df,len_c)
-			for i in range(1,len(q_text)):
-				qu0 = q_text[i-1]
-				qu1 = q_text[i]
-				prod_p_q_M *= bi_dirch_smooth(qu0,qu1,docbody,docbody_pair,vocab_words_df,vocab_words_df_pair,len_c)
+			p_wQ = p_m * p_w_M * prod_p_q_M
 
-			p_wQ += (p_m * p_w_M * prod_p_q_M)
-
-		dict_p_w_R.update({wp:p_wQ})
+			dict_p_w_R[wp] = dict_p_w_R.get(wp,0) + p_wQ
 	
 	return dict_p_w_R
 
