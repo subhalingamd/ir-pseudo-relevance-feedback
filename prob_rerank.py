@@ -69,9 +69,9 @@ def do_task(docid_file_offset,qtext,result_docs,collection_file,expansion_limit)
 			doc_body_all.append(doc_body)
 			doc_body_set = set(doc_body)
 			for word in doc_body_set:
+				df_all_doc_set[word] = df_all_doc_set.get(word,0) + 1
 				if word in qtext_set:
 					continue
-				df_all_doc_set[word] = df_all_doc_set.get(word,0) + 1
 				if i < rel_docs_ct:
 					df_rel_doc_set[word] = df_rel_doc_set.get(word,0) + 1
 			i += 1
